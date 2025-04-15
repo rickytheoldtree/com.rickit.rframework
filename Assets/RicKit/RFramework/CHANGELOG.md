@@ -1,6 +1,6 @@
 # Changelog
-## [1.0.2] - 2025-04-15
-- add: `LastSelected` property to `BindablePropertyButton`
+## [1.0.3] - 2025-04-15
+- add: `lastSelected` field to `BindablePropertyButton`
 ## [1.0.1] - 2025-03-19
 ### Add BindablePropertyButton
 ## [1.0.0] - 2025-03-07

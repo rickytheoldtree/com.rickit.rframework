@@ -7,8 +7,8 @@ namespace RicKit.RFramework.UIComponents
     public abstract class BindablePropertyButton<T> : MonoBehaviour
     {
         protected BindableProperty<T> bp;
-        protected T id; 
-        protected bool LastSelected { get; set; }
+        protected T id;
+        protected bool lastSelected;
         protected virtual void Awake()
         {
             var btn = GetComponentInChildren<Button>();
@@ -24,22 +24,25 @@ namespace RicKit.RFramework.UIComponents
             bp?.UnRegister(OnValueChange);
         }
 
-        public virtual void Init(T id, BindableProperty<T> bp)
+        public void Init(T id, BindableProperty<T> bp)
         {
             this.bp?.UnRegister(OnValueChange);
             this.id = id;
             this.bp = bp;
             bp.Register(OnValueChange);
-            UpdateUI(bp.Value.Equals(this.id));
+            var selected = id.Equals(bp.Value);
+            InitUI(selected);
+            lastSelected = selected;
         }
 
         private void OnValueChange(T id)
         {
             var selected = id.Equals(this.id);
-            UpdateUI(selected);
-            LastSelected = selected;
+            UpdateUI(selected, lastSelected);
+            lastSelected = selected;
         }
-        protected abstract void UpdateUI(bool selected);
+        protected abstract void InitUI(bool selected);
+        protected abstract void UpdateUI(bool selected, bool lastSelected);
         protected virtual bool CanSelected() => true;
     }
 }
