@@ -8,6 +8,7 @@ namespace RicKit.RFramework.UIComponents
     {
         protected BindableProperty<T> bp;
         protected T id; 
+        protected bool LastSelected { get; set; }
         protected virtual void Awake()
         {
             var btn = GetComponentInChildren<Button>();
@@ -28,14 +29,16 @@ namespace RicKit.RFramework.UIComponents
             this.bp?.UnRegister(OnValueChange);
             this.id = id;
             this.bp = bp;
-            bp.RegisterAndInvoke(OnValueChange);
+            bp.Register(OnValueChange);
+            UpdateUI(bp.Value.Equals(this.id));
         }
 
         private void OnValueChange(T id)
         {
-            UpdateUI(id.Equals(this.id));
+            var selected = id.Equals(this.id);
+            UpdateUI(selected);
+            LastSelected = selected;
         }
-        
         protected abstract void UpdateUI(bool selected);
         protected virtual bool CanSelected() => true;
     }
