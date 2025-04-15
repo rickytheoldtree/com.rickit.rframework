@@ -35,5 +35,5 @@ jobs:
 
           # Create and push the tag
           git tag "$tag_name" upm
-          git push origin upm --tags
+          git push origin upm --tags --force
           echo "Tag '$tag_name' pushed to origin."
