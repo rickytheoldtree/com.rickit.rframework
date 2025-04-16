@@ -1,4 +1,6 @@
 # Changelog
+## [1.1.1] - 2025-04-16
+- remove: `EnhancedScroller` from the package
 ## [1.1.0] - 2025-04-16
 - add: `EnhancedScroller`
 ## [1.0.3] - 2025-04-15
