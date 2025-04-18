@@ -21,7 +21,7 @@ namespace RicKit.RFramework
             if (locator != null) return;
             locator = new T();
             await locator.InitAsync(progress);
-            foreach (var service in locator.services)
+            foreach (var service in locator.cache)
             {
                 if (service is ICanStartAsync startAsync)
                     await startAsync.StartAsync(progress);
@@ -37,7 +37,6 @@ namespace RicKit.RFramework
             var type = typeof(TService);
             if (!cache.TryAdd(type, service))
                 throw new ServiceAlreadyExistsException(type);
-            services.Add(service);
             if (service is ICanInitAsync initAsync)
                 await initAsync.InitAsync(progress);
             service.IsInitialized = true;

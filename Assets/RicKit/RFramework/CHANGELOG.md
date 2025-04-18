@@ -1,4 +1,6 @@
 # Changelog
+## [1.2.0] - 2025-04-18
+- add: `Cache`
 ## [1.1.1] - 2025-04-16
 - remove: `EnhancedScroller` from the package
 ## [1.1.0] - 2025-04-16

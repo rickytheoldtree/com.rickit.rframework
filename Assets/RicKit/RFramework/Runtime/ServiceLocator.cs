@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -42,15 +43,35 @@ namespace RicKit.RFramework
             }
         }
 
-        protected readonly Dictionary<Type, IService> cache = new Dictionary<Type, IService>();
-        protected readonly List<IService> services = new List<IService>();
+        protected class Cache : IEnumerable<IService>
+        {
+            private readonly Dictionary<Type, IService> map = new Dictionary<Type, IService>();
+            private readonly List<IService> services = new List<IService>();
+
+            public bool TryAdd<TService>(Type type, TService service) where TService : IService
+            {
+                if (!map.TryAdd(type, service)) return false;
+                services.Add(service);
+                return true;
+            }
+
+            public bool TryGetValue(Type type, out IService service)
+            {
+                return map.TryGetValue(type, out service);
+            }
+
+            public IEnumerator<IService> GetEnumerator() => services.GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+        
+        protected readonly Cache cache = new Cache();
 
         public static void Initialize()
         {
             if (locator != null) return;
             locator = new T();
             locator.Init();
-            foreach (var service in locator.services)
+            foreach (var service in locator.cache)
             {
                 service.Start();
             }
@@ -66,9 +87,9 @@ namespace RicKit.RFramework
 
         public virtual void DeInit()
         {
-            foreach (var kvp in cache.Where(kvp => kvp.Value.IsInitialized))
+            foreach (var service in cache.Where(service => service.IsInitialized))
             {
-                kvp.Value.DeInit();
+                service.DeInit();
             }
 
             locator = null;
@@ -83,7 +104,6 @@ namespace RicKit.RFramework
                 throw new ServiceAlreadyExistsException(type);
             }
 
-            services.Add(service);
             service.Init();
             service.IsInitialized = true;
             if (!IsInitialized) return;
