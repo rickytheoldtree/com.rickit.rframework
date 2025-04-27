@@ -9,12 +9,17 @@ namespace RicKit.RFramework.UIComponents
         protected BindableProperty<T> bp;
         protected T id;
         protected bool lastSelected;
+
         protected virtual void Awake()
         {
             var btn = GetComponentInChildren<Button>();
             btn.onClick.AddListener(() =>
             {
-                if (!CanSelected()) return;
+                if (!CanSelected())
+                {
+                    ClickWhileLocked();
+                    return;
+                }
                 bp.Value = id;
             });
         }
@@ -44,5 +49,8 @@ namespace RicKit.RFramework.UIComponents
         protected abstract void InitUI(bool selected);
         protected abstract void UpdateUI(bool selected, bool lastSelected);
         protected virtual bool CanSelected() => true;
+        protected virtual void ClickWhileLocked()
+        {
+        }
     }
 }
