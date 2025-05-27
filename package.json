@@ -1,0 +1,14 @@
+{
+  "name": "com.rickit.rframework",
+  "displayName": "RicKit RFramework",
+  "author": {
+    "name": "LYQ"
+  },
+  "version": "1.2.2",
+  "unity": "2020.3",
+  "description": "An IOC framework for Unity",
+  "repository": {
+    "url": "https://github.com/rickytheoldtree/com.rickit.rframework.git",
+    "type": "git"
+  }
+}
