@@ -1,4 +1,6 @@
 # Changelog
+## [1.2.2] - 2025-05-27
+- refactor event handling to use delegates for improved performance and flexibility
 ## [1.2.1] - 2025-04-18
 - add: `Cache`
 ## [1.1.1] - 2025-04-16

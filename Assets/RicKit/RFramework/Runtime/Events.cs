@@ -5,51 +5,34 @@ namespace RicKit.RFramework
 {
     public class Events
     {
-        private readonly Dictionary<string, object> events = new Dictionary<string, object>();
+        private readonly Dictionary<Type, Delegate> events = new();
 
-        public void Register<T>(Action<T> action)
+        public void Register<T>(Action<T> callback)
         {
-            var key = typeof(T).Name;
-            if (!events.ContainsKey(key))
-            {
-                events[key] = new Event<T>();
-            }
-
-            ((Event<T>)events[key]).Register(action);
+            var type = typeof(T);
+            if (events.TryGetValue(type, out var existing))
+                events[type] = Delegate.Combine(existing, callback);
+            else
+                events[type] = callback;
         }
 
-        public void UnRegister<T>(Action<T> action)
+        public void UnRegister<T>(Action<T> callback)
         {
-            var key = typeof(T).Name;
-            if (!events.TryGetValue(key, out var e)) return;
-            ((Event<T>)e).UnRegister(action);
+            var type = typeof(T);
+            if (!events.TryGetValue(type, out var existing)) return;
+
+            var updated = Delegate.Remove(existing, callback);
+            if (updated == null)
+                events.Remove(type);
+            else
+                events[type] = updated;
         }
 
         public void Send<T>(T arg = default)
         {
-            var key = typeof(T).Name;
-            if (!events.TryGetValue(key, out var e)) return;
-            ((Event<T>)e).Invoke(arg);
-        }
-    }
-
-    public class Event<T>
-    {
-        private Action<T> action = delegate { };
-
-        public void Register(Action<T> action)
-        {
-            this.action += action;
-        }
-
-        public void UnRegister(Action<T> action)
-        {
-            this.action -= action;
-        }
-
-        public void Invoke(T arg)
-        {
-            action(arg);
+            var type = typeof(T);
+            if (events.TryGetValue(type, out var d))
+                (d as Action<T>)?.Invoke(arg);
         }
     }
 
