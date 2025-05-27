@@ -3,13 +3,12 @@
     public interface ICommand : ICanGetLocator, ICanSetLocator
     {
         void Init();
-        void Execute();
+        void Execute(params object[] args);
     }
 
-    public interface ICommand<out TResult> : ICanGetLocator, ICanSetLocator
+    public interface ICommand<out TResult> : ICommand
     {
-        void Init();
-        TResult Execute();
+        new TResult Execute(params object[] args);
     }
 
     public abstract class AbstractCommand : ICommand
@@ -22,7 +21,7 @@
         {
         }
 
-        public abstract void Execute();
+        public abstract void Execute(params object[] args);
     }
 
     public abstract class AbstractCommand<TResult> : ICommand<TResult>
@@ -35,33 +34,48 @@
         {
         }
 
-        public abstract TResult Execute();
+        void ICommand.Execute(params object[] args) => Execute(args);
+        
+        public abstract TResult Execute(params object[] args);
     }
 
     public static class CommandExtension
     {
-        public static void SendCommand(this ICanGetLocator self, ICommand command)
+        public static void SendCommand<TCommand>(this ICanGetLocator self, params object[] args) where TCommand : class, ICommand, new()
         {
-            self.GetLocator().SendCommand(command);
+            self.GetLocator().SendCommand<TCommand>(args);
         }
 
-        public static TResult SendCommand<TResult>(this ICanGetLocator self, ICommand<TResult> command)
+        public static TResult SendCommand<TCommand, TResult>(this ICanGetLocator self, params object[] args) where TCommand : class, ICommand<TResult>, new()
         {
-            return self.GetLocator().SendCommand(command);
+            return self.GetLocator().SendCommand<TCommand, TResult>(args);
         }
 
-        public static void SendCommand(this IServiceLocator self, ICommand command)
+        public static void SendCommand<TCommand>(this IServiceLocator self, params object[] args) where TCommand : class, ICommand, new()
         {
+            if (self.Commands.TryGetValue(typeof(TCommand), out var command))
+            {
+                command.Execute(args);
+                return;
+            }
+            command = new TCommand();
+            self.Commands.Add(typeof(TCommand), command);
             command.SetLocator(self);
             command.Init();
-            command.Execute();
+            command.Execute(args);
         }
 
-        public static TResult SendCommand<TResult>(this IServiceLocator self, ICommand<TResult> command)
+        public static TResult SendCommand<TCommand, TResult>(this IServiceLocator self, params object[] args) where TCommand : class, ICommand<TResult>, new()
         {
+            if (self.Commands.TryGetValue(typeof(TCommand), out var command))
+            {
+                return ((ICommand<TResult>)command).Execute(args);
+            }
+            command = new TCommand();
+            self.Commands.Add(typeof(TCommand), command);
             command.SetLocator(self);
             command.Init();
-            return command.Execute();
+            return ((ICommand<TResult>)command).Execute(args);
         }
     }
 }
