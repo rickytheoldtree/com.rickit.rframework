@@ -1,5 +1,6 @@
 # Changelog
-## [1.3.0] - 2025-05-27
+## [1.3.1] - 2025-05-27
+- refactor Command class to make Init method abstract
 - enhance ICommand interface to support variable arguments and update ServiceLocator to manage command instances
 ## [1.2.2] - 2025-05-27
 - refactor event handling to use delegates for improved performance and flexibility

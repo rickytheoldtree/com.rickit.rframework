@@ -17,9 +17,7 @@
         IServiceLocator ICanGetLocator.GetLocator() => locator;
         void ICanSetLocator.SetLocator(IServiceLocator locator) => this.locator = locator;
 
-        public virtual void Init()
-        {
-        }
+        public abstract void Init();
 
         public abstract void Execute(params object[] args);
     }
@@ -30,9 +28,7 @@
         IServiceLocator ICanGetLocator.GetLocator() => locator;
         void ICanSetLocator.SetLocator(IServiceLocator locator) => this.locator = locator;
 
-        public virtual void Init()
-        {
-        }
+        public abstract void Init();
 
         void ICommand.Execute(params object[] args) => Execute(args);
         
