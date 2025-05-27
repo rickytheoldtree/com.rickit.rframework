@@ -7,7 +7,7 @@ namespace RicKit.RFramework
 {
     public interface IServiceLocator : ICanInit
     {
-        Events Events { get; }
+        Dictionary<Type, Delegate> Events { get; }
         Dictionary<Type, ICommand> Commands { get; }
         T GetService<T>() where T : IService;
         bool TryGetService<T>(out T service) where T : IService;
@@ -33,7 +33,7 @@ namespace RicKit.RFramework
     public abstract class ServiceLocator<T> : IServiceLocator where T : ServiceLocator<T>, new()
     {
         protected static T locator;
-        public Events Events { get; } = new Events();
+        public Dictionary<Type, Delegate> Events { get; } = new();
         public Dictionary<Type, ICommand> Commands { get; } = new();
 
         public static T I

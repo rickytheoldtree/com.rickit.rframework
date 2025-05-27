@@ -1,4 +1,6 @@
 # Changelog
+## [1.3.1] - 2025-05-27
+- refactor event handling in ServiceLocator to use Dictionary<Type, Delegate>
 ## [1.3.0] - 2025-05-27
 - enhance ICommand interface to support variable arguments and update ServiceLocator to manage command instances
 ## [1.2.2] - 2025-05-27
