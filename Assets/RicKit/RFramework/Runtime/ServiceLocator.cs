@@ -75,6 +75,10 @@ namespace RicKit.RFramework
             locator.Init();
             foreach (var service in locator.cache)
             {
+                service.Init();
+            }
+            foreach (var service in locator.cache)
+            {
                 service.Start();
                 service.IsInitialized = true;
             }
@@ -107,8 +111,8 @@ namespace RicKit.RFramework
                 throw new ServiceAlreadyExistsException(type);
             }
 
-            service.Init();
             if (!IsInitialized) return;
+            service.Init();
             service.Start();
             service.IsInitialized = true;
         }

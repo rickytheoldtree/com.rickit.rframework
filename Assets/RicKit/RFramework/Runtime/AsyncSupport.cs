@@ -23,6 +23,13 @@ namespace RicKit.RFramework
             await locator.InitAsync(progress);
             foreach (var service in locator.cache)
             {
+                if (service is ICanInitAsync initAsync)
+                    await initAsync.InitAsync(progress);
+                else
+                    service.Init();
+            }
+            foreach (var service in locator.cache)
+            {
                 if (service is ICanStartAsync startAsync)
                     await startAsync.StartAsync(progress);
                 else
@@ -32,15 +39,17 @@ namespace RicKit.RFramework
             locator.IsInitialized = true;
         }
         
-        public async UniTask RegisterServiceAsync<TService>(TService service, IProgress<float> progress) where TService : IService, ICanInitAsync
+        public async UniTask RegisterServiceAsync<TService>(TService service, IProgress<float> progress) where TService : IService
         {
             service.SetLocator(this);
             var type = typeof(TService);
             if (!cache.TryAdd(type, service))
                 throw new ServiceAlreadyExistsException(type);
+            if (!IsInitialized) return;
             if (service is ICanInitAsync initAsync)
                 await initAsync.InitAsync(progress);
-            if (!IsInitialized) return;
+            else
+                service.Init();
             if (service is ICanStartAsync startAsync)
                 await startAsync.StartAsync(progress);
             else
