@@ -107,9 +107,11 @@ namespace RicKit.RFramework
             }
 
             service.Init();
+            if (IsInitialized)
+            {
+                service.Start();
+            }
             service.IsInitialized = true;
-            if (!IsInitialized) return;
-            service.Start();
         }
 
         public TService GetService<TService>() where TService : IService
