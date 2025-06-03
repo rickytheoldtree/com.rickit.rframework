@@ -1,5 +1,5 @@
 # Changelog
-## [1.3.2] - 2025-06-03
+## [1.3.3] - 2025-06-03
 - refactor: improve service initialization logic in ServiceLocator and AsyncSupport
 ## [1.3.1] - 2025-05-27
 - refactor event handling in ServiceLocator to use Dictionary<Type, Delegate>

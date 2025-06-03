@@ -27,6 +27,7 @@ namespace RicKit.RFramework
                     await startAsync.StartAsync(progress);
                 else
                     service.Start();
+                service.IsInitialized = true;
             }
             locator.IsInitialized = true;
         }
@@ -39,13 +40,11 @@ namespace RicKit.RFramework
                 throw new ServiceAlreadyExistsException(type);
             if (service is ICanInitAsync initAsync)
                 await initAsync.InitAsync(progress);
-            if (IsInitialized)
-            {
-                if (service is ICanStartAsync startAsync)
-                    await startAsync.StartAsync(progress);
-                else
-                    service.Start();
-            }
+            if (!IsInitialized) return;
+            if (service is ICanStartAsync startAsync)
+                await startAsync.StartAsync(progress);
+            else
+                service.Start();
             service.IsInitialized = true;
         }
     }
