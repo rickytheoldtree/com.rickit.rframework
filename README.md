@@ -2,7 +2,7 @@
 
 [![openupm](https://img.shields.io/npm/v/com.rickit.rframework?label=openupm&registry_uri=https://package.openupm.com)](https://openupm.com/packages/com.rickit.rframework/)
 
-🌏 [中文文档 (Chinese README)](README.zh.md)
+🌏 [中文文档 (Chinese README)](README.zh-CN.md)
 
 ## Overview
 
