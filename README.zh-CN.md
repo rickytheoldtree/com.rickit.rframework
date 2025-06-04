@@ -1,6 +1,8 @@
 # RicKit.RFramework 使用说明
 
-> [English Version](README.md)
+> [English Version](README.md) | [OpenUPM 页面](https://openupm.cn/packages/rickit.rframework/)
+
+[![openupm](https://img.shields.io/npm/v/com.rickit.rframework?label=openupm&registry_uri=https://package.openupm.com)](https://openupm.com/packages/com.rickit.rframework/)
 
 ## 目录
 
@@ -17,6 +19,8 @@
 ## 简介
 
 RicKit.RFramework 是一套轻量级服务定位器（Service Locator）和消息派发框架，支持依赖注入、事件总线（Event）、命令派发（Command）等，适用于 Unity 与 C# 工程。
+
+- OpenUPM 页面：[https://openupm.cn/packages/rickit.rframework/](https://openupm.cn/packages/rickit.rframework/)
 
 ---
 
@@ -249,4 +253,6 @@ int killedId = this.SendCommand<KillPlayerCommand, int>(playerId);
 - **ServiceLocator 只在启动与服务注册等全局场景用，业务层请用服务接口。**
 
 ---
-如需英文文档或更多细节，请点击 [English Version](README.md)。
+如需英文文档或更多细节，请点击 [English Version](README.md)。  
+OpenUPM 安装与主页见：[https://openupm.cn/packages/rickit.rframework/](https://openupm.cn/packages/rickit.rframework/)
+[![openupm](https://img.shields.io/npm/v/com.rickit.rframework?label=openupm&registry_uri=https://package.openupm.com)](https://openupm.com/packages/com.rickit.rframework/)
