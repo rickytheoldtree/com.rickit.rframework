@@ -1,6 +1,6 @@
 # RicKit.RFramework 使用说明
 
-> [English Version](README.md) | [OpenUPM 页面](https://openupm.cn/packages/rickit.rframework/)
+> [English Version](README.md)
 
 [![openupm](https://img.shields.io/npm/v/com.rickit.rframework?label=openupm&registry_uri=https://package.openupm.com)](https://openupm.com/packages/com.rickit.rframework/)
 
@@ -251,8 +251,3 @@ int killedId = this.SendCommand<KillPlayerCommand, int>(playerId);
 - **服务 Init/Start 由框架统一调度，保障依赖顺序和可用性。**
 - **如需反初始化，调用 DeInit 即可自动依次反初始化所有服务。**
 - **ServiceLocator 只在启动与服务注册等全局场景用，业务层请用服务接口。**
-
----
-如需英文文档或更多细节，请点击 [English Version](README.md)。  
-OpenUPM 安装与主页见：[https://openupm.cn/packages/rickit.rframework/](https://openupm.cn/packages/rickit.rframework/)
-[![openupm](https://img.shields.io/npm/v/com.rickit.rframework?label=openupm&registry_uri=https://package.openupm.com)](https://openupm.com/packages/com.rickit.rframework/)
