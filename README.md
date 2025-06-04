@@ -20,7 +20,7 @@
 
 RicKit.RFramework is a lightweight service locator and messaging framework supporting dependency injection, event bus (Event), and command dispatch (Command), suitable for Unity and C# projects.
 
-- OpenUPM page: [https://openupm.com/packages/rickit.rframework/](https://openupm.cn/packages/rickit.rframework/)
+- OpenUPM page: [https://openupm.com/packages/rickit.rframework/](https://openupm.com/packages/rickit.rframework/)
 
 ---
 
