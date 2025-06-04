@@ -1,131 +1,239 @@
-# RicKit RDebug
+# RicKit RFramework
 
-[![openupm](https://img.shields.io/npm/v/com.rickit.rdebug?label=openupm&registry_uri=https://package.openupm.com)](https://openupm.com/packages/com.rickit.rdebug/)
+[![openupm](https://img.shields.io/npm/v/com.rickit.rframework?label=openupm&registry_uri=https://package.openupm.com)](https://openupm.com/packages/com.rickit.rframework/)
 
-> 🌐 [中文文档](./README.zh-CN.md)
+🌏 [中文文档 (Chinese README)](README.zh.md)
 
----
+## Overview
 
-## Introduction
-
-RicKit RDebug is a Unity-based debug panel utility for quickly creating custom runtime debug UIs. By inheriting from the abstract `RDebug` class, you can easily add buttons, input fields, and more for runtime debugging and parameter tweaking.
+RicKit RFramework is a lightweight service locator framework for managing service lifecycles in C# applications. It supports service initialization, startup, de-initialization, and optional dependency management, designed to be both Unity-friendly and usable in generic C# projects.
 
 ---
 
-## Features
+## Best Practice: Register Services by Interface
 
-- One-click creation of a debug panel.
-- Supports common controls like buttons and input fields.
-- Flexible layout options (vertical/horizontal).
-- Customizable button/input field styles (color, font, etc.).
-- Designed for Unity MonoBehaviour workflow.
+**It is recommended to register services using their interfaces, not concrete classes.**  
+This approach improves decoupling, supports dependency inversion, and makes testing easier.
+
+**Example:**
+```csharp
+// Define an interface
+public interface IGameService : IService
+{
+    void DoSomething();
+}
+
+// Implement the interface
+public class GameService : AbstractService, IGameService
+{
+    public void DoSomething() { /* ... */ }
+}
+
+// Register by interface
+public class GameLocator : ServiceLocator<GameLocator>
+{
+    public override void Init()
+    {
+        base.Init();
+        RegisterService<IGameService>(new GameService());
+    }
+}
+
+// Retrieve by interface
+var service = this.GetService<IGameService>();
+```
 
 ---
 
-## Quick Start
+## Core Interfaces and Classes
 
-1. Create a new class that inherits from `RDebug` and implement the `OnShow()` method. You can also override properties for customization.
+### `IServiceLocator`
+- The main service locator interface.
+- Provides:
+  - `GetService<T>()` and `TryGetService<T>()` to retrieve registered services.
+  - Access to global events via `Events`.
+
+### `ICanInit`
+- Base lifecycle interface:
+  - `Init()` for initialization
+  - `DeInit()` for de-initialization
+  - `IsInitialized` status flag
+
+### `ICanSetLocator`
+- Indicates that a service can have its owning `IServiceLocator` injected.
+
+### `ICanStart`
+- Indicates that a service supports a `Start()` phase.
+
+### `IService`
+- Combines `ICanInit`, `ICanStart`, `ICanGetLocator`, and `ICanSetLocator` as the base service interface.
+
+### `ICanGetLocator`
+- Provides a method to get the current service locator.
+
+### `ICanGetLocator<T>`
+- Default implementation of `ICanGetLocator`, returns `ServiceLocator<T>.I`.
+
+---
+
+## Main Class: `ServiceLocator<T>`
+
+- Generic singleton base for creating concrete service locator types.
+
+Example:
+```csharp
+public class MyGameLocator : ServiceLocator<MyGameLocator> {}
+```
+
+### Main Members
+
+- `static T I`: Singleton accessor.
+- `Initialize()`: Initialize the locator.
+- `RegisterService<T>(TService service)`:
+  - Sets the `Locator`
+  - Initializes the service
+  - If the locator is already initialized, starts the service.
+- `DeInit()`: De-initializes all services and clears the singleton.
+
+### Internal Class: `Cache`
+
+- Stores all registered services.
+- Based on `Dictionary<Type, IService>` and `List<IService>`.
+
+### Custom Initialization
+
+Override the `Init()` method in your locator for custom logic:
 
 ```csharp
-using RicKit.RDebug;
-using UnityEngine;
-
-public class MyDebugPanel : RDebug
+public class GameLocator : ServiceLocator<GameLocator>
 {
-    protected override void Awake()
+    public override void Init()
     {
-        // Customize styles in Awake
-        TextColor = Color.yellow;
-        BgColor = new Color(0.2f, 0.2f, 0.2f, 0.8f);
-        // BgSprite = ... // set a custom background image if desired
-        base.Awake();
-    }
-
-    protected override void OnShow()
-    {
-        UsingHorizontalLayoutGroup(() =>
-        {
-            CreateButton("customBtn", "My Button", () => Debug.Log("Button clicked!"));
-            CreateInputField("customInput", "Input", value => Debug.Log($"Input: {value}"));
-        });
+        base.Init();
+        RegisterService<IGameService>(new GameService());
+        // Register more services here
     }
 }
 ```
 
 ---
 
-## API Reference
+## Abstract Service Class: `AbstractService`
 
-### Inheritance Point
+- Implements `IService`
+- Provides lifecycle hooks (overridable):
+  - `Init()` initialization
+  - `Start()` startup
+  - `DeInit()` de-initialization
 
-- `protected abstract void OnShow()`
-  - Implement this to define the content of your debug panel.
+---
 
-### Common Methods
+## Utility: `BindableProperty<T>`
 
-- `protected Button CreateButton(string key, string name, UnityAction onClick, int width = 100, int height = 100, int fontSize = 30)`
-  - Add a button to the panel.
-  - `key`: Unique identifier for the button.
-  - `name`: Display text.
-  - `onClick`: Callback when button is pressed.
+- Encapsulates a bindable property, supporting value change listeners.
+- Methods:
+  - `Register(Action<T>)`: Register a listener
+  - `RegisterAndInvoke(Action<T>)`: Register and invoke immediately
+  - `UnRegister(Action<T>)`: Remove a listener
+  - `SetWithoutInvoke(T)`: Set value without triggering event
 
-- `protected InputField CreateInputField(string key, string name, UnityAction<string> onValueChanged, int width = 100, int height = 100, int fontSize = 30, string defaultValue = "")`
-  - Add an input field.
-  - `key`: Unique identifier.
-  - `name`: Label text.
-  - `onValueChanged`: Callback on text change.
+---
 
-- `protected GameObject CreateLabel(string key, string name, int width = 100, int height = 100, int fontSize = 30)`
-  - Add a label (display-only text) to the panel.
+## Extension Methods: `ServiceExtension`
 
-- `protected void UsingHorizontalLayoutGroup(Action action, int height = 100)`
-  - Group controls horizontally.
+- Provides concise service access for objects implementing `ICanGetLocator`:
 
-- `public void OnHide()`
-  - Manually hide the debug panel and clear controls.
+```csharp
+var myService = someComponent.GetService<IGameService>();
+```
 
-### Fields and Properties
+- Supports safe access:
 
-- `protected Dictionary<string, GameObject> Components { get; }`
-  - Stores references to all created UI elements (buttons, input fields, labels, etc.) with their corresponding keys.
+```csharp
+if (someComponent.TryGetService(out IGameService service)) { ... }
+```
 
-### Style Customization
+### Recommended Service Access
 
-- `protected Color TextColor { get; set; }`
-- `protected Color BgColor { get; set; }`
-- `protected Sprite BgSprite { get; set; }`
+Objects implementing `ICanGetLocator<GameLocator>` can access services directly:
+
+```csharp
+public class GameLogic : ICanGetLocator<GameLocator>
+{
+    public void DoSomething()
+    {
+        var service = this.GetService<IGameService>();
+    }
+}
+```
+
+---
+
+## Exception Types
+
+### `ServiceNotFoundException`
+- Thrown when a service is not registered.
+- Constructor:
+```csharp
+new ServiceNotFoundException(typeof(IGameService))
+```
+
+### `ServiceAlreadyExistsException`
+- Thrown when a duplicate service is registered.
+- Constructor:
+```csharp
+new ServiceAlreadyExistsException(typeof(IGameService))
+```
+
+---
+
+## Usage Example
+
+```csharp
+public interface IGameService : IService
+{
+    void DoSomething();
+}
+
+public class GameService : AbstractService, IGameService
+{
+    public void DoSomething() { /* ... */ }
+}
+
+public class GameLocator : ServiceLocator<GameLocator>
+{
+    public override void Init()
+    {
+        base.Init();
+        RegisterService<IGameService>(new GameService());
+    }
+}
+
+// Initialize the locator
+GameLocator.Initialize();
+
+// Accessing services from an object implementing ICanGetLocator<GameLocator>
+public class GameLogic : ICanGetLocator<GameLocator>
+{
+    public void Run()
+    {
+        var gameService = this.GetService<IGameService>();
+    }
+}
+```
 
 ---
 
 ## Notes
 
-- Must be used within a Unity project.
-- Attach your custom debug class to a GameObject in your scene.
-- Style and layout can be freely customized.
+- Always call `Initialize()` before using services.
+- When a locator is already initialized, registering a service will automatically call `Start()`.
+- Designed for Unity, but also suitable for general C# applications.
 
 ---
 
-## License
+## Recommended Extensions
 
-Apache License 2.0
-
----
-
-## Links
-
-- [GitHub Repository](https://github.com/rickytheoldtree/com.rickit.rdebug)
-- [OpenUPM Page](https://openupm.com/packages/com.rickit.rdebug/)
-
----
-
-## Changelog
-
-See [`Assets/RicKit/RDebug/CHANGELOG.md`](Assets/RicKit/RDebug/CHANGELOG.md) for the latest updates.
-
-Recent changes (v1.1.0):
-- Refactored the `RDebug` class for more effective UI component management.
-- API changes:  
-  - All control creation methods (`CreateButton`, `CreateInputField`, etc.) now require a unique `key` parameter as the first argument.
-  - Added `CreateLabel` for display-only text.
-  - Improved panel clearing and layout group management.
-  - Exposed `Components` dictionary for managing and accessing all created UI elements.
+- Logging support
+- Service dependency validation
+- Async lifecycle support
