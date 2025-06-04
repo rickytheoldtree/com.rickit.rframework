@@ -1,6 +1,6 @@
 # RicKit.RFramework Documentation
 
-> [中文版](README.zh-CN.md) | [OpenUPM Page](https://openupm.cn/packages/rickit.rframework/)
+> [中文版](README.zh-CN.md)
 
 [![openupm](https://img.shields.io/npm/v/com.rickit.rframework?label=openupm&registry_uri=https://package.openupm.com)](https://openupm.com/packages/com.rickit.rframework/)
 
@@ -251,8 +251,3 @@ int killedId = this.SendCommand<KillPlayerCommand, int>(playerId);
 - **Service Init/Start is managed by the framework for correct order and availability.**
 - **Use DeInit for teardown; all services will be de-initialized in order.**
 - **ServiceLocator should only be referenced for startup/global registration—business code should use service interfaces.**
-
----
-For the Chinese documentation, please click [中文版](README.zh-CN.md).  
-OpenUPM install and homepage: [https://openupm.cn/packages/rickit.rframework/](https://openupm.cn/packages/rickit.rframework/)
-[![openupm](https://img.shields.io/npm/v/com.rickit.rframework?label=openupm&registry_uri=https://package.openupm.com)](https://openupm.com/packages/com.rickit.rframework/)
