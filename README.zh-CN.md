@@ -20,7 +20,7 @@
 
 RicKit.RFramework 是一套轻量级服务定位器（Service Locator）和消息派发框架，支持依赖注入、事件总线（Event）、命令派发（Command）等，适用于 Unity 与 C# 工程。
 
-- OpenUPM 页面：[https://openupm.cn/packages/rickit.rframework/](https://openupm.cn/packages/rickit.rframework/)
+- OpenUPM 页面：[https://openupm.com/packages/rickit.rframework/](https://openupm.com/packages/rickit.rframework/)
 
 ---
 
