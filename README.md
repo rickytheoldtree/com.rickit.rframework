@@ -1,239 +1,252 @@
-# RicKit RFramework
+# RicKit.RFramework Documentation
 
-[![openupm](https://img.shields.io/npm/v/com.rickit.rframework?label=openupm&registry_uri=https://package.openupm.com)](https://openupm.com/packages/com.rickit.rframework/)
+> [中文版](README.zh-CN.md)
 
-🌏 [中文文档 (Chinese README)](README.zh-CN.md)
+## Table of Contents
 
-## Overview
-
-RicKit RFramework is a lightweight service locator framework for managing service lifecycles in C# applications. It supports service initialization, startup, de-initialization, and optional dependency management, designed to be both Unity-friendly and usable in generic C# projects.
+- [Introduction](#introduction)
+- [ServiceLocator Lifecycle & Initialization](#servicelocator-lifecycle--initialization)
+- [Dependency Injection & Service Registration](#dependency-injection--service-registration)
+- [Event System](#event-system)
+- [Command System](#command-system)
+- [Examples](#examples)
+- [Best Practices](#best-practices)
 
 ---
 
-## Best Practice: Register Services by Interface
+## Introduction
 
-**It is recommended to register services using their interfaces, not concrete classes.**  
-This approach improves decoupling, supports dependency inversion, and makes testing easier.
+RicKit.RFramework is a lightweight service locator and messaging framework supporting dependency injection, event bus (Event), and command dispatch (Command), suitable for Unity and C# projects.
 
-**Example:**
+---
+
+## ServiceLocator Lifecycle & Initialization
+
+**ServiceLocator** is the core of RicKit.RFramework, managing registration, access, and lifecycle of all services.
+
+### Initialization Sequence
+
+- `ServiceLocator<T>.Initialize()` is the framework entry point and should be called **once**.
+- The lifecycle is:
+
+  1. **Create and initialize the locator instance**, calling its `Init()` (typically for registering all services).
+  2. **Iterate all registered services and call their `Init()`** (for dependency resolution, event registration, etc.).
+  3. **Iterate all services again and call their `Start()`** (now all services are safe to use each other).
+  4. Each service is marked `IsInitialized = true`; finally, the locator itself is `IsInitialized = true`.
+
+- **If you register a new service after locator is initialized, its Init and Start are called immediately.**
+
+#### Recommended Practice
+
+- **Register all service instances in the locator's `Init()` method.**
+- The framework guarantees the correct order of Init/Start calls.
+- Business code (MonoBehaviour, commands, etc.) should use TryGetService/GetService in Awake/Init to get service dependencies.
+
+#### DeInit
+
+- Calling locator's `DeInit()` will call DeInit on all initialized services and release the locator instance.
+
+---
+
+## Dependency Injection & Service Registration
+
+- **All service registration should be centralized in the ServiceLocator's Init method.**
+- Services should inherit from `AbstractService` and implement Init, Start, and DeInit.
+- Business code should use `TryGetService` or `GetService` for dependency injection, never directly depend on the locator.
+
+---
+
+## Event System
+
+### Core Mechanism
+
+- Events are distinguished by generic parameter `T`, essentially registering and dispatching `Action<T>`.
+- Registration, unregistration, and dispatch are implemented via extension methods on `IServiceLocator`, with convenient access for `ICanGetLocator<T>` objects.
+- All event handlers are stored in a type-safe `Dictionary<Type, Delegate>`.
+
+### Key Interfaces
+
+- `RegisterEvent<T>(Action<T> action)`: Register an event listener.
+- `UnRegisterEvent<T>(Action<T> action)`: Unregister an event listener.
+- `SendEvent<T>(T arg = default)`: Dispatch an event.
+
+### Usage Advice
+
+- Register/unregister events in the early lifecycle (`Awake`/`Init`/`Start`) and on destruction (`OnDestroy`).
+
+---
+
+## Command System
+
+### Core Mechanism
+
+- Commands are identified by class name and support both void (`ICommand`) and return-value (`ICommand<TResult>`) flavors.
+- Commands are created, cached, and reused via the ServiceLocator, supporting parameter passing and dependency injection.
+- Each command's Init() is automatically called before first execution for dependency injection.
+
+### Key Interfaces
+
+- `ICommand`: Base command interface, including `Init()` and `Execute(params object[] args)`.
+- `ICommand<TResult>`: Command interface with return value, `Execute` returns `TResult`.
+- `AbstractCommand` / `AbstractCommand<TResult>`: Recommended abstract base classes.
+- `SendCommand<TCommand>(...)` / `SendCommand<TCommand, TResult>(...)`: Command dispatch methods.
+
+### Usage Advice
+
+- Override `Init` in command classes for dependency injection; all dependencies will be injected before command execution.
+- Commands should be stateless or short-lived; persistent state belongs in the Service layer.
+
+---
+
+## Examples
+
+Below are usage examples covering service implementation, registration, dependency injection, event, and command features:
+
+### 1. Service Interface & Implementation
+
 ```csharp
-// Define an interface
-public interface IGameService : IService
+public interface IVibrateService : IService
 {
-    void DoSomething();
+    void Vibrate(int milliseconds = 2);
 }
 
-// Implement the interface
-public class GameService : AbstractService, IGameService
+public class VibrateService : AbstractService, IVibrateService
 {
-    public void DoSomething() { /* ... */ }
-}
+    private ISettingsDataService settingsDataService;
 
-// Register by interface
-public class GameLocator : ServiceLocator<GameLocator>
+    public override void Init()
+    {
+        this.TryGetService(out settingsDataService);
+    }
+
+    public void Vibrate(int milliseconds = 2)
+    {
+        if (!settingsDataService.Vibrate.Value) return;
+        PlatformUtils.Vibrate(milliseconds);
+    }
+}
+```
+
+### 2. Register Services in ServiceLocator
+
+```csharp
+public class Entity : ServiceLocator<Entity>
 {
     public override void Init()
     {
-        base.Init();
-        RegisterService<IGameService>(new GameService());
+        RegisterService<IVibrateService>(new VibrateService());
+        // ...register other services
     }
 }
-
-// Retrieve by interface
-var service = this.GetService<IGameService>();
 ```
 
----
-
-## Core Interfaces and Classes
-
-### `IServiceLocator`
-- The main service locator interface.
-- Provides:
-  - `GetService<T>()` and `TryGetService<T>()` to retrieve registered services.
-  - Access to global events via `Events`.
-
-### `ICanInit`
-- Base lifecycle interface:
-  - `Init()` for initialization
-  - `DeInit()` for de-initialization
-  - `IsInitialized` status flag
-
-### `ICanSetLocator`
-- Indicates that a service can have its owning `IServiceLocator` injected.
-
-### `ICanStart`
-- Indicates that a service supports a `Start()` phase.
-
-### `IService`
-- Combines `ICanInit`, `ICanStart`, `ICanGetLocator`, and `ICanSetLocator` as the base service interface.
-
-### `ICanGetLocator`
-- Provides a method to get the current service locator.
-
-### `ICanGetLocator<T>`
-- Default implementation of `ICanGetLocator`, returns `ServiceLocator<T>.I`.
-
----
-
-## Main Class: `ServiceLocator<T>`
-
-- Generic singleton base for creating concrete service locator types.
-
-Example:
-```csharp
-public class MyGameLocator : ServiceLocator<MyGameLocator> {}
-```
-
-### Main Members
-
-- `static T I`: Singleton accessor.
-- `Initialize()`: Initialize the locator.
-- `RegisterService<T>(TService service)`:
-  - Sets the `Locator`
-  - Initializes the service
-  - If the locator is already initialized, starts the service.
-- `DeInit()`: De-initializes all services and clears the singleton.
-
-### Internal Class: `Cache`
-
-- Stores all registered services.
-- Based on `Dictionary<Type, IService>` and `List<IService>`.
-
-### Custom Initialization
-
-Override the `Init()` method in your locator for custom logic:
+### 3. Business Layer: Get and Use the Service
 
 ```csharp
-public class GameLocator : ServiceLocator<GameLocator>
+public class SomeGameLogic : ICanGetLocator<Entity>
 {
+    private IVibrateService vibrateService;
+
+    public void Init()
+    {
+        this.TryGetService(out vibrateService);
+    }
+
+    public void OnSpecialEvent()
+    {
+        vibrateService?.Vibrate(10);
+    }
+}
+```
+
+### 4. Event System Usage
+
+#### Event Declaration
+
+```csharp
+public struct PlayerDiedEvent
+{
+    public int PlayerId;
+}
+```
+
+#### Event Subscription and Unsubscription (Unity MonoBehaviour Example)
+
+```csharp
+using UnityEngine;
+
+public class PlayerUI : MonoBehaviour, ICanGetLocator<Entity>
+{
+    void Awake()
+    {
+        this.RegisterEvent<PlayerDiedEvent>(OnPlayerDied);
+    }
+
+    private void OnPlayerDied(PlayerDiedEvent evt)
+    {
+        // Respond to player death, e.g., show UI
+    }
+
+    void OnDestroy()
+    {
+        this.UnRegisterEvent<PlayerDiedEvent>(OnPlayerDied);
+    }
+}
+```
+
+#### Event Dispatch
+
+```csharp
+// Dispatch event somewhere in code
+this.SendEvent(new PlayerDiedEvent { PlayerId = 1 });
+```
+
+### 5. Command System Usage
+
+#### Command Definition
+
+```csharp
+public class KillPlayerCommand : AbstractCommand<int>
+{
+    private IPlayerService playerService;
+
     public override void Init()
     {
-        base.Init();
-        RegisterService<IGameService>(new GameService());
-        // Register more services here
+        this.TryGetService(out playerService);
     }
-}
-```
 
----
-
-## Abstract Service Class: `AbstractService`
-
-- Implements `IService`
-- Provides lifecycle hooks (overridable):
-  - `Init()` initialization
-  - `Start()` startup
-  - `DeInit()` de-initialization
-
----
-
-## Utility: `BindableProperty<T>`
-
-- Encapsulates a bindable property, supporting value change listeners.
-- Methods:
-  - `Register(Action<T>)`: Register a listener
-  - `RegisterAndInvoke(Action<T>)`: Register and invoke immediately
-  - `UnRegister(Action<T>)`: Remove a listener
-  - `SetWithoutInvoke(T)`: Set value without triggering event
-
----
-
-## Extension Methods: `ServiceExtension`
-
-- Provides concise service access for objects implementing `ICanGetLocator`:
-
-```csharp
-var myService = someComponent.GetService<IGameService>();
-```
-
-- Supports safe access:
-
-```csharp
-if (someComponent.TryGetService(out IGameService service)) { ... }
-```
-
-### Recommended Service Access
-
-Objects implementing `ICanGetLocator<GameLocator>` can access services directly:
-
-```csharp
-public class GameLogic : ICanGetLocator<GameLocator>
-{
-    public void DoSomething()
+    public override int Execute(params object[] args)
     {
-        var service = this.GetService<IGameService>();
+        int playerId = (int)args[0];
+        playerService.Kill(playerId);
+        return playerId;
     }
 }
 ```
 
----
-
-## Exception Types
-
-### `ServiceNotFoundException`
-- Thrown when a service is not registered.
-- Constructor:
-```csharp
-new ServiceNotFoundException(typeof(IGameService))
-```
-
-### `ServiceAlreadyExistsException`
-- Thrown when a duplicate service is registered.
-- Constructor:
-```csharp
-new ServiceAlreadyExistsException(typeof(IGameService))
-```
-
----
-
-## Usage Example
+#### Command Dispatch and Return Value
 
 ```csharp
-public interface IGameService : IService
-{
-    void DoSomething();
-}
-
-public class GameService : AbstractService, IGameService
-{
-    public void DoSomething() { /* ... */ }
-}
-
-public class GameLocator : ServiceLocator<GameLocator>
-{
-    public override void Init()
-    {
-        base.Init();
-        RegisterService<IGameService>(new GameService());
-    }
-}
-
-// Initialize the locator
-GameLocator.Initialize();
-
-// Accessing services from an object implementing ICanGetLocator<GameLocator>
-public class GameLogic : ICanGetLocator<GameLocator>
-{
-    public void Run()
-    {
-        var gameService = this.GetService<IGameService>();
-    }
-}
+// Dispatch command and get result
+int killedId = this.SendCommand<KillPlayerCommand, int>(playerId);
 ```
 
+### Notes
+
+- Service registration is centralized in ServiceLocator's Init method; lifecycle is auto-managed.
+- All services are recommended to inject dependencies via TryGetService inside Init.
+- Register/unregister events in Init/Awake and OnDestroy; event types are recommended as structs.
+- Commands should be stateless, dependencies injected via Init, executed via SendCommand.
+
 ---
 
-## Notes
+## Best Practices
 
-- Always call `Initialize()` before using services.
-- When a locator is already initialized, registering a service will automatically call `Start()`.
-- Designed for Unity, but also suitable for general C# applications.
+- **Centralize all service registration in the global ServiceLocator. Do not self-register services inside their Init.**
+- **Business code obtains service dependencies using TryGetService for loose coupling.**
+- **Service Init/Start is managed by the framework for correct order and availability.**
+- **Use DeInit for teardown; all services will be de-initialized in order.**
+- **ServiceLocator should only be referenced for startup/global registration—business code should use service interfaces.**
 
 ---
-
-## Recommended Extensions
-
-- Logging support
-- Service dependency validation
-- Async lifecycle support
+For the Chinese documentation, please click [中文版](README.zh-CN.md).
