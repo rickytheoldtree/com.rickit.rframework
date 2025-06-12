@@ -94,9 +94,9 @@
             self.GetLocator().SendCommand<TCommand, TArgs, TResult>(args);
         }
         
-        public static void SendCommandWithArgs<TCommand, TArgs>(this ICanGetLocator self, TArgs args) where TCommand : class, ICommandOnlyArgs<TArgs>, new()
+        public static void SendCommandOnlyArgs<TCommand, TArgs>(this ICanGetLocator self, TArgs args) where TCommand : class, ICommandOnlyArgs<TArgs>, new()
         {
-            self.GetLocator().SendCommandWithArgs<TCommand, TArgs>(args);
+            self.GetLocator().SendCommandOnlyArgs<TCommand, TArgs>(args);
         }
         
 
@@ -140,7 +140,7 @@
             return ((ICommand<TArgs, TResult>)command).Execute(args);
         }
         
-        public static void SendCommandWithArgs<TCommand, TArgs>(this IServiceLocator self, TArgs args) where TCommand : class, ICommandOnlyArgs<TArgs>, new()
+        public static void SendCommandOnlyArgs<TCommand, TArgs>(this IServiceLocator self, TArgs args) where TCommand : class, ICommandOnlyArgs<TArgs>, new()
         {
             if (self.Commands.TryGetValue(typeof(TCommand), out var command))
             {

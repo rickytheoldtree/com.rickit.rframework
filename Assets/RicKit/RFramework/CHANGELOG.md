@@ -1,5 +1,5 @@
 # Changelog
-## [1.4.0] - 2025-06-12
+## [1.4.1] - 2025-06-12
 - refactor ICommand interfaces for improved execution handling
 ## [1.3.4] - 2025-06-03
 - refactor: improve service initialization logic in ServiceLocator and AsyncSupport
