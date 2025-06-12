@@ -84,21 +84,27 @@ RicKit.RFramework is a lightweight service locator and messaging framework suppo
 
 ### Core Mechanism
 
-- Commands are identified by class name and support both void (`ICommand`) and return-value (`ICommand<TResult>`) flavors.
-- Commands are created, cached, and reused via the ServiceLocator, supporting parameter passing and dependency injection.
-- Each command's Init() is automatically called before first execution for dependency injection.
+- The command system adopts a "Request-Handler" (CQRS/Request-Handler) pattern, not just the classic "Command Pattern".
+- Commands are identified by class and support multiple signatures: no argument with/without return, single argument with/without return.
+- All command instances are created, cached, and reused by the ServiceLocator, supporting parameter passing and automatic dependency injection.
+- Each command's `Init()` is called once before first execution for dependency injection.
+- The command's `Execute()` method is responsible for business logic and may accept arguments and/or return a result.
 
 ### Key Interfaces
 
-- `ICommand`: Base command interface, including `Init()` and `Execute(params object[] args)`.
-- `ICommand<TResult>`: Command interface with return value, `Execute` returns `TResult`.
-- `AbstractCommand` / `AbstractCommand<TResult>`: Recommended abstract base classes.
-- `SendCommand<TCommand>(...)` / `SendCommand<TCommand, TResult>(...)`: Command dispatch methods.
+- `ICommand`: Base command interface, including `Init()` and `Execute()`.
+- `ICommand<TResult>`: Command interface with return value, `Execute()` returns `TResult`.
+- `ICommand<TArgs, TResult>`: Command interface with argument and return value.
+- `ICommandOnlyArgs<TArgs>`: Command interface with argument and no return value.
+- `AbstractCommand` / `AbstractCommand<TResult>` / `AbstractCommand<TArgs, TResult>` / `AbstractCommandOnlyArgs<TArgs>`: Recommended abstract base classes.
+- `SendCommand<TCommand>(...)` / `SendCommand<TCommand, TResult>(...)` / `SendCommand<TCommand, TArgs, TResult>(TArgs args)` / `SendCommandOnlyArgs<TCommand, TArgs>(TArgs args)`: Command dispatch methods via ServiceLocator or ICanGetLocator extensions.
 
 ### Usage Advice
 
-- Override `Init` in command classes for dependency injection; all dependencies will be injected before command execution.
-- Commands should be stateless or short-lived; persistent state belongs in the Service layer.
+- Override `Init()` in command classes for dependency injection; all dependencies will be injected before command execution.
+- Commands should be **stateless** or short-lived; persistent state belongs in the Service layer.
+- Use the corresponding `SendCommand` or `SendCommandOnlyArgs` extension to dispatch commands and get results.
+- Do not new up command instances manually; always dispatch through the framework.
 
 ---
 
@@ -207,10 +213,10 @@ this.SendEvent(new PlayerDiedEvent { PlayerId = 1 });
 
 ### 5. Command System Usage
 
-#### Command Definition
+#### Command with argument and return value
 
 ```csharp
-public class KillPlayerCommand : AbstractCommand<int>
+public class KillPlayerCommand : AbstractCommand<int, int>
 {
     private IPlayerService playerService;
 
@@ -219,28 +225,59 @@ public class KillPlayerCommand : AbstractCommand<int>
         this.TryGetService(out playerService);
     }
 
-    public override int Execute(params object[] args)
+    public override int Execute(int playerId)
     {
-        int playerId = (int)args[0];
         playerService.Kill(playerId);
         return playerId;
     }
 }
 ```
 
-#### Command Dispatch and Return Value
+#### Dispatch command and get result
 
 ```csharp
 // Dispatch command and get result
-int killedId = this.SendCommand<KillPlayerCommand, int>(playerId);
+int killedId = this.SendCommand<KillPlayerCommand, int, int>(playerId);
 ```
 
-### Notes
+#### Command with only argument (no return value)
 
-- Service registration is centralized in ServiceLocator's Init method; lifecycle is auto-managed.
-- All services are recommended to inject dependencies via TryGetService inside Init.
-- Register/unregister events in Init/Awake and OnDestroy; event types are recommended as structs.
-- Commands should be stateless, dependencies injected via Init, executed via SendCommand.
+```csharp
+public class LogEventCommand : AbstractCommandOnlyArgs<string>
+{
+    public override void Init() {}
+
+    public override void Execute(string message)
+    {
+        Debug.Log(message);
+    }
+}
+
+// Dispatch command
+this.SendCommandOnlyArgs<LogEventCommand, string>("Player died.");
+```
+
+#### Command with no argument and return value
+
+```csharp
+public class GetPlayerCountCommand : AbstractCommand<int>
+{
+    private IPlayerService playerService;
+
+    public override void Init()
+    {
+        this.TryGetService(out playerService);
+    }
+
+    public override int Execute()
+    {
+        return playerService.GetPlayerCount();
+    }
+}
+
+// Dispatch command
+int count = this.SendCommand<GetPlayerCountCommand, int>();
+```
 
 ---
 
@@ -251,3 +288,4 @@ int killedId = this.SendCommand<KillPlayerCommand, int>(playerId);
 - **Service Init/Start is managed by the framework for correct order and availability.**
 - **Use DeInit for teardown; all services will be de-initialized in order.**
 - **ServiceLocator should only be referenced for startup/global registration—business code should use service interfaces.**
+
