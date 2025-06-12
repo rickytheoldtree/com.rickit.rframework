@@ -89,9 +89,9 @@
             return self.GetLocator().SendCommand<TCommand, TResult>();
         }
         
-        public static void SendCommand<TCommand, TArgs, TResult>(this ICanGetLocator self, TArgs args) where TCommand : class, ICommand<TArgs, TResult>, new()
+        public static TResult SendCommand<TCommand, TArgs, TResult>(this ICanGetLocator self, TArgs args) where TCommand : class, ICommand<TArgs, TResult>, new()
         {
-            self.GetLocator().SendCommand<TCommand, TArgs, TResult>(args);
+            return self.GetLocator().SendCommand<TCommand, TArgs, TResult>(args);
         }
         
         public static void SendCommandOnlyArgs<TCommand, TArgs>(this ICanGetLocator self, TArgs args) where TCommand : class, ICommandOnlyArgs<TArgs>, new()
