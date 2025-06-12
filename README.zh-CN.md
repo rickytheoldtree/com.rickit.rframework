@@ -84,21 +84,26 @@ RicKit.RFramework 是一套轻量级服务定位器（Service Locator）和消�
 
 ### 核心机制
 
-- 命令以类名标识，支持无返回值（`ICommand`）或有返回值（`ICommand<TResult>`）。
-- 命令通过 ServiceLocator 创建、缓存与复用，支持参数传递与依赖注入。
-- 每个命令在首次执行前会自动调用 `Init()` 进行依赖注入。
+- 命令系统采用“请求-处理器”（CQRS/Request-Handler）思想，不仅是传统命令模式。
+- 命令以类为标识，支持多种签名：无参/有参、有无返回值。
+- 所有命令实例均由 ServiceLocator 创建、缓存与复用，支持参数传递和自动依赖注入。
+- 每个命令首次执行前会自动调用 `Init()` 完成依赖注入。
+- 命令的 `Execute()` 方法负责具体业务逻辑，可带参数和/或返回值。
 
 ### 关键接口
 
-- `ICommand`：基础命令接口，包含 `Init()` 和 `Execute(params object[] args)`。
-- `ICommand<TResult>`：带返回值的命令接口，`Execute` 返回 `TResult`。
-- `AbstractCommand` / `AbstractCommand<TResult>`：推荐继承的抽象基类。
-- `SendCommand<TCommand>(...)` / `SendCommand<TCommand, TResult>(...)`：命令派发方法。
+- `ICommand`：基础命令接口，包含 `Init()` 和 `Execute()`。
+- `ICommand<TResult>`：带返回值的命令接口，`Execute()` 返回 `TResult`。
+- `ICommand<TArgs, TResult>`：带参数和返回值的命令接口。
+- `ICommandOnlyArgs<TArgs>`：带参数无返回值的命令接口。
+- `AbstractCommand` / `AbstractCommand<TResult>` / `AbstractCommand<TArgs, TResult>` / `AbstractCommandOnlyArgs<TArgs>`：推荐继承的抽象基类。
+- `SendCommand<TCommand>(...)` / `SendCommand<TCommand, TResult>(...)` / `SendCommand<TCommand, TArgs, TResult>(TArgs args)` / `SendCommandOnlyArgs<TCommand, TArgs>(TArgs args)`：通过 ServiceLocator 或 ICanGetLocator 扩展方法派发命令。
 
 ### 使用建议
 
-- 命令类中通过重写 `Init` 实现依赖注入，所有依赖在命令首次执行前注入。
-- 命令推荐无状态或短生命周期，对于有状态需求请在 Service 层实现。
+- 命令类建议无状态，依赖通过重写 `Init()` 注入，避免在 `Execute()` 查找依赖。
+- 命令用于封装单一业务处理逻辑，便于解耦和单元测试。
+- 派发命令统一通过 `SendCommand` 或 `SendCommandOnlyArgs`，不要手动 new 命令实例。
 
 ---
 
@@ -207,10 +212,10 @@ this.SendEvent(new PlayerDiedEvent { PlayerId = 1 });
 
 ### 5. Command（命令）系统用法
 
-#### 命令定义
+#### 有参数有返回值命令
 
 ```csharp
-public class KillPlayerCommand : AbstractCommand<int>
+public class KillPlayerCommand : AbstractCommand<int, int>
 {
     private IPlayerService playerService;
 
@@ -219,28 +224,59 @@ public class KillPlayerCommand : AbstractCommand<int>
         this.TryGetService(out playerService);
     }
 
-    public override int Execute(params object[] args)
+    public override int Execute(int playerId)
     {
-        int playerId = (int)args[0];
         playerService.Kill(playerId);
         return playerId;
     }
 }
 ```
 
-#### 命令派发与返回值
+#### 派发命令并获取返回值
 
 ```csharp
 // 派发命令并获取返回值
-int killedId = this.SendCommand<KillPlayerCommand, int>(playerId);
+int killedId = this.SendCommand<KillPlayerCommand, int, int>(playerId);
 ```
 
-### 说明
+#### 只有参数无返回值命令
 
-- 服务注册集中于 ServiceLocator 的 Init 方法，生命周期自动管理。
-- 所有服务建议在 Init 中用 TryGetService 注入依赖。
-- 事件建议在 Init/Awake 注册，在 OnDestroy 注销，事件类型建议使用 struct。
-- 命令推荐无状态，依赖通过 Init 注入，执行时用 SendCommand 调用。
+```csharp
+public class LogEventCommand : AbstractCommandOnlyArgs<string>
+{
+    public override void Init() {}
+
+    public override void Execute(string message)
+    {
+        Debug.Log(message);
+    }
+}
+
+// 派发命令
+this.SendCommandOnlyArgs<LogEventCommand, string>("玩家死亡。");
+```
+
+#### 无参数有返回值命令
+
+```csharp
+public class GetPlayerCountCommand : AbstractCommand<int>
+{
+    private IPlayerService playerService;
+
+    public override void Init()
+    {
+        this.TryGetService(out playerService);
+    }
+
+    public override int Execute()
+    {
+        return playerService.GetPlayerCount();
+    }
+}
+
+// 派发命令
+int count = this.SendCommand<GetPlayerCountCommand, int>();
+```
 
 ---
 
