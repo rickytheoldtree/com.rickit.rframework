@@ -1,4 +1,6 @@
 # Changelog
+## [1.4.3] - 2025-06-13
+- Rename SendCommandOnlyArgs method to SendCommand for consistency
 ## [1.4.2] - 2025-06-12
 - refactor ICommand interfaces for improved execution handling
 ## [1.3.4] - 2025-06-03
