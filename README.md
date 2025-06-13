@@ -4,6 +4,10 @@
 
 [![openupm](https://img.shields.io/npm/v/com.rickit.rframework?label=openupm&registry_uri=https://package.openupm.com)](https://openupm.com/packages/com.rickit.rframework/)
 
+> ⚡ **Inspired by [QFramework](https://github.com/liangxiegame/QFramework) – RicKit.RFramework’s command system is heavily inspired by QFramework and implements a lightweight service locator and messaging system.**
+
+---
+
 ## Table of Contents
 
 - [Introduction](#introduction)
@@ -21,62 +25,7 @@
 RicKit.RFramework is a lightweight service locator and messaging framework supporting dependency injection, event bus (Event), and command dispatch (Command), suitable for Unity and C# projects.
 
 - OpenUPM page: [https://openupm.com/packages/rickit.rframework/](https://openupm.com/packages/rickit.rframework/)
-
----
-
-## ServiceLocator Lifecycle & Initialization
-
-**ServiceLocator** is the core of RicKit.RFramework, managing registration, access, and lifecycle of all services.
-
-### Initialization Sequence
-
-- `ServiceLocator<T>.Initialize()` is the framework entry point and should be called **once**.
-- The lifecycle is:
-
-  1. **Create and initialize the locator instance**, calling its `Init()` (typically for registering all services).
-  2. **Iterate all registered services and call their `Init()`** (for dependency resolution, event registration, etc.).
-  3. **Iterate all services again and call their `Start()`** (now all services are safe to use each other).
-  4. Each service is marked `IsInitialized = true`; finally, the locator itself is `IsInitialized = true`.
-
-- **If you register a new service after locator is initialized, its Init and Start are called immediately.**
-
-#### Recommended Practice
-
-- **Register all service instances in the locator's `Init()` method.**
-- The framework guarantees the correct order of Init/Start calls.
-- Business code (MonoBehaviour, commands, etc.) should use TryGetService/GetService in Awake/Init to get service dependencies.
-
-#### DeInit
-
-- Calling locator's `DeInit()` will call DeInit on all initialized services and release the locator instance.
-
----
-
-## Dependency Injection & Service Registration
-
-- **All service registration should be centralized in the ServiceLocator's Init method.**
-- Services should inherit from `AbstractService` and implement Init, Start, and DeInit.
-- Business code should use `TryGetService` or `GetService` for dependency injection, never directly depend on the locator.
-
----
-
-## Event System
-
-### Core Mechanism
-
-- Events are distinguished by generic parameter `T`, essentially registering and dispatching `Action<T>`.
-- Registration, unregistration, and dispatch are implemented via extension methods on `IServiceLocator`, with convenient access for `ICanGetLocator<T>` objects.
-- All event handlers are stored in a type-safe `Dictionary<Type, Delegate>`.
-
-### Key Interfaces
-
-- `RegisterEvent<T>(Action<T> action)`: Register an event listener.
-- `UnRegisterEvent<T>(Action<T> action)`: Unregister an event listener.
-- `SendEvent<T>(T arg = default)`: Dispatch an event.
-
-### Usage Advice
-
-- Register/unregister events in the early lifecycle (`Awake`/`Init`/`Start`) and on destruction (`OnDestroy`).
+- Inspired by QFramework: [https://github.com/liangxiegame/QFramework](https://github.com/liangxiegame/QFramework)
 
 ---
 
@@ -84,132 +33,77 @@ RicKit.RFramework is a lightweight service locator and messaging framework suppo
 
 ### Core Mechanism
 
-- The command system adopts a "Request-Handler" (CQRS/Request-Handler) pattern, not just the classic "Command Pattern".
-- Commands are identified by class and support multiple signatures: no argument with/without return, single argument with/without return.
-- All command instances are created, cached, and reused by the ServiceLocator, supporting parameter passing and automatic dependency injection.
-- Each command's `Init()` is called once before first execution for dependency injection.
-- The command's `Execute()` method is responsible for business logic and may accept arguments and/or return a result.
+The command system adopts a "Request-Handler" (CQRS/Request-Handler) pattern, similar to [QFramework](https://github.com/liangxiegame/QFramework), but is implemented independently.
 
-### Key Interfaces
+- Commands are identified by their class type and support a variety of signatures:
+  - No argument, no return value (`ICommand`, `AbstractCommand`)
+  - No argument, with return value (`ICommand<TResult>`, `AbstractCommand<TResult>`)
+  - With argument, with return value (`ICommand<TArgs, TResult>`, `AbstractCommand<TArgs, TResult>`)
+  - With argument, no return value (`ICommandOnlyArgs<TArgs>`, `AbstractCommandOnlyArgs<TArgs>`)
+- All command instances are created, cached, and reused by the `ServiceLocator`, supporting parameter passing and automatic dependency injection. Each command's `Init()` is called once before first execution for dependency injection.
+- The command's `Execute()` method contains the business logic and may accept arguments and/or return a result.
 
-- `ICommand`: Base command interface, including `Init()` and `Execute()`.
-- `ICommand<TResult>`: Command interface with return value, `Execute()` returns `TResult`.
-- `ICommand<TArgs, TResult>`: Command interface with argument and return value.
-- `ICommandOnlyArgs<TArgs>`: Command interface with argument and no return value.
-- `AbstractCommand` / `AbstractCommand<TResult>` / `AbstractCommand<TArgs, TResult>` / `AbstractCommandOnlyArgs<TArgs>`: Recommended abstract base classes.
-- `SendCommand<TCommand>(...)` / `SendCommand<TCommand, TResult>(...)` / `SendCommand<TCommand, TArgs, TResult>(TArgs args)` / `SendCommandOnlyArgs<TCommand, TArgs>(TArgs args)`: Command dispatch methods via ServiceLocator or ICanGetLocator extensions.
+### Command interface and base class
+
+```csharp
+public interface ICommand : ICanGetLocator, ICanSetLocator
+{
+    void Init();
+    void Execute();
+}
+
+public interface ICommand<out TResult> : ICommand
+{
+    new TResult Execute();
+}
+public interface ICommandOnlyArgs<in TArgs> : ICommand
+{
+    void Execute(TArgs args);
+}
+public interface ICommand<in TArgs, out TResult> : ICommand
+{
+    TResult Execute(TArgs args);
+}
+```
+
+The framework provides abstract base classes for each command type:
+
+- `AbstractCommand` (no args, no return)
+- `AbstractCommand<TResult>` (no args, return)
+- `AbstractCommand<TArgs, TResult>` (args, return)
+- `AbstractCommandOnlyArgs<TArgs>` (args, no return)
+
+### Command dispatch extension methods
+
+You should **never instantiate commands manually**. Instead, always dispatch via the framework's extension methods, e.g.:
+
+```csharp
+// For no-arg, no-return command
+this.SendCommand<SomeCommand>();
+
+// For no-arg, with-return command
+var result = this.SendCommand<GetValueCommand, int>();
+
+// For arg, with-return command
+var result = this.SendCommand<CalcCommand, int, int>(input);
+
+// For arg, no-return command
+this.SendCommand<LogCommand, string>("Log Message");
+```
+
+> **Note:** The correct method for "argument, no return" commands is `this.SendCommand<CommandType, ArgType>(arg)`—not `SendCommandOnlyArgs`!  
+> Example: `this.SendCommand<LogEventCommand, string>("Player died.");`
 
 ### Usage Advice
 
 - Override `Init()` in command classes for dependency injection; all dependencies will be injected before command execution.
 - Commands should be **stateless** or short-lived; persistent state belongs in the Service layer.
-- Use the corresponding `SendCommand` or `SendCommandOnlyArgs` extension to dispatch commands and get results.
-- Do not new up command instances manually; always dispatch through the framework.
+- Use the corresponding `SendCommand` extension methods to dispatch commands and get results.
+- Do not instantiate command classes directly; always dispatch through the framework so that dependency injection and caching work correctly.
 
 ---
 
 ## Examples
-
-Below are usage examples covering service implementation, registration, dependency injection, event, and command features:
-
-### 1. Service Interface & Implementation
-
-```csharp
-public interface IVibrateService : IService
-{
-    void Vibrate(int milliseconds = 2);
-}
-
-public class VibrateService : AbstractService, IVibrateService
-{
-    private ISettingsDataService settingsDataService;
-
-    public override void Init()
-    {
-        this.TryGetService(out settingsDataService);
-    }
-
-    public void Vibrate(int milliseconds = 2)
-    {
-        if (!settingsDataService.Vibrate.Value) return;
-        PlatformUtils.Vibrate(milliseconds);
-    }
-}
-```
-
-### 2. Register Services in ServiceLocator
-
-```csharp
-public class Entity : ServiceLocator<Entity>
-{
-    public override void Init()
-    {
-        RegisterService<IVibrateService>(new VibrateService());
-        // ...register other services
-    }
-}
-```
-
-### 3. Business Layer: Get and Use the Service
-
-```csharp
-public class SomeGameLogic : ICanGetLocator<Entity>
-{
-    private IVibrateService vibrateService;
-
-    public void Init()
-    {
-        this.TryGetService(out vibrateService);
-    }
-
-    public void OnSpecialEvent()
-    {
-        vibrateService?.Vibrate(10);
-    }
-}
-```
-
-### 4. Event System Usage
-
-#### Event Declaration
-
-```csharp
-public struct PlayerDiedEvent
-{
-    public int PlayerId;
-}
-```
-
-#### Event Subscription and Unsubscription (Unity MonoBehaviour Example)
-
-```csharp
-using UnityEngine;
-
-public class PlayerUI : MonoBehaviour, ICanGetLocator<Entity>
-{
-    void Awake()
-    {
-        this.RegisterEvent<PlayerDiedEvent>(OnPlayerDied);
-    }
-
-    private void OnPlayerDied(PlayerDiedEvent evt)
-    {
-        // Respond to player death, e.g., show UI
-    }
-
-    void OnDestroy()
-    {
-        this.UnRegisterEvent<PlayerDiedEvent>(OnPlayerDied);
-    }
-}
-```
-
-#### Event Dispatch
-
-```csharp
-// Dispatch event somewhere in code
-this.SendEvent(new PlayerDiedEvent { PlayerId = 1 });
-```
 
 ### 5. Command System Usage
 
@@ -236,7 +130,6 @@ public class KillPlayerCommand : AbstractCommand<int, int>
 #### Dispatch command and get result
 
 ```csharp
-// Dispatch command and get result
 int killedId = this.SendCommand<KillPlayerCommand, int, int>(playerId);
 ```
 
@@ -254,7 +147,7 @@ public class LogEventCommand : AbstractCommandOnlyArgs<string>
 }
 
 // Dispatch command
-this.SendCommandOnlyArgs<LogEventCommand, string>("Player died.");
+this.SendCommand<LogEventCommand, string>("Player died.");
 ```
 
 #### Command with no argument and return value
@@ -283,9 +176,8 @@ int count = this.SendCommand<GetPlayerCountCommand, int>();
 
 ## Best Practices
 
-- **Centralize all service registration in the global ServiceLocator. Do not self-register services inside their Init.**
-- **Business code obtains service dependencies using TryGetService for loose coupling.**
-- **Service Init/Start is managed by the framework for correct order and availability.**
-- **Use DeInit for teardown; all services will be de-initialized in order.**
-- **ServiceLocator should only be referenced for startup/global registration—business code should use service interfaces.**
+- **Do not instantiate command classes directly. Always use SendCommand extensions so that dependency injection and caching are correctly handled by the framework.**
+- **Commands are stateless singletons managed by the ServiceLocator.**
+- **The command system design and usage are inspired by QFramework. For more details, see [QFramework Command System](https://github.com/liangxiegame/QFramework).**
 
+---
