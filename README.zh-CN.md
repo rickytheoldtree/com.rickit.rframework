@@ -1,184 +1,252 @@
-# RicKit.RFramework 使用说明
+# RicKit.RFramework 文档
 
-> [English Version](README.md)
+> [English version](README.md)
 
-[![openupm](https://img.shields.io/npm/v/com.rickit.rframework?label=openupm&registry_uri=https://package.openupm.com)](https://openupm.com/packages/com.rickit.rframework/)
+[![openupm](https://img.shields.io/npm/v/com.rickit.rframework?label=OpenUPM&registry_uri=https://package.openupm.com)](https://openupm.com/packages/com.rickit.rframework)
 
-> ⚡ **灵感来源：[QFramework](https://github.com/liangxiegame/QFramework) —— RicKit.RFramework 的命令系统深受 QFramework 启发，并在此基础上实现了轻量级服务定位与消息机制。**
+> ⚡ **借鉴自 [QFramework](https://github.com/liangxiegame/QFramework)** – RicKit.RFramework 的命令系统和服务定位器模式深受 QFramework 启发，提供轻量、Unity 友好的实现。
 
 ---
 
 ## 目录
 
-- [简介](#简介)
-- [ServiceLocator 介绍与生命周期](#servicelocator-介绍与生命周期)
-- [依赖注入与服务注册](#依赖注入与服务注册)
-- [Event 系统](#event-系统)
-- [Command 系统](#command-系统)
-- [示例](#示例)
-- [最佳实践](#最佳实践)
+1. [简介](#简介)  
+2. [主要特性](#主要特性)  
+3. [架构概览](#架构概览)  
+4. [安装](#安装)  
+5. [快速上手](#快速上手)  
+6. [ServiceLocator 生命周期 & 初始化](#servicelocator-生命周期--初始化)  
+7. [依赖注入 & 服务注册](#依赖注入--服务注册)  
+8. [命令与 MonoBehaviour 中的依赖注入](#命令与-monobehaviour-中的依赖注入)  
+9. [事件系统](#事件系统)  
+10. [命令系统](#命令系统)  
+11. [使用示例](#使用示例)  
+12. [最佳实践](#最佳实践)  
+13. [高级主题](#高级主题)  
+14. [贡献指南](#贡献指南)  
+15. [许可](#许可)  
 
 ---
 
 ## 简介
 
-RicKit.RFramework 是一套轻量级服务定位器（Service Locator）和消息派发框架，支持依赖注入、事件总线（Event）、命令派发（Command）等，适用于 Unity 与 C# 工程开发。
+RicKit.RFramework 是一个轻量级 **服务定位器** 与 **消息传递** 框架，适用于 Unity 与 C# 项目，支持：
 
-- OpenUPM 页面：[https://openupm.com/packages/rickit.rframework/](https://openupm.com/packages/rickit.rframework/)
-- 致敬 QFramework: [https://github.com/liangxiegame/QFramework](https://github.com/liangxiegame/QFramework)
-
----
-
-## Command 系统
-
-### 核心机制
-
-命令系统采用“请求-处理器”（CQRS/Request-Handler）思想，设计风格与 [QFramework](https://github.com/liangxiegame/QFramework) 命令体系高度相似，但为独立实现。
-
-- 命令以类为标识，支持多种签名：
-  - 无参无返回值（`ICommand`, `AbstractCommand`）
-  - 无参有返回值（`ICommand<TResult>`, `AbstractCommand<TResult>`）
-  - 有参有返回值（`ICommand<TArgs, TResult>`, `AbstractCommand<TArgs, TResult>`）
-  - 有参无返回值（`ICommandOnlyArgs<TArgs>`, `AbstractCommandOnlyArgs<TArgs>`）
-- 所有命令实例均由 ServiceLocator 创建、缓存与复用，支持参数传递和自动依赖注入。每个命令首次执行前会自动调用 `Init()` 完成依赖注入。
-- 命令的 `Execute()` 方法负责具体业务逻辑，可带参数和/或返回值。
-
-### 命令接口与基类
-
-```csharp
-public interface ICommand : ICanGetLocator, ICanSetLocator
-{
-    void Init();
-    void Execute();
-}
-
-public interface ICommand<out TResult> : ICommand
-{
-    new TResult Execute();
-}
-public interface ICommandOnlyArgs<in TArgs> : ICommand
-{
-    void Execute(TArgs args);
-}
-public interface ICommand<in TArgs, out TResult> : ICommand
-{
-    TResult Execute(TArgs args);
-}
-```
-
-框架为每种命令类型都提供了抽象基类：
-
-- `AbstractCommand`（无参无返回）
-- `AbstractCommand<TResult>`（无参有返回）
-- `AbstractCommand<TArgs, TResult>`（有参有返回）
-- `AbstractCommandOnlyArgs<TArgs>`（有参无返回）
-
-### 命令派发扩展方法
-
-**请勿手动 new 命令实例，始终通过框架扩展方法派发命令，以保障依赖注入与缓存。**
-
-```csharp
-// 无参无返回
-this.SendCommand<SomeCommand>();
-
-// 无参有返回
-var result = this.SendCommand<GetValueCommand, int>();
-
-// 有参有返回
-var result = this.SendCommand<CalcCommand, int, int>(input);
-
-// 有参无返回
-this.SendCommand<LogCommand, string>("日志信息");
-```
-
-> **注意：**  
-> 带参数无返回值命令应使用 `this.SendCommand<命令类型, 参数类型>(参数)`，而不是 `SendCommandOnlyArgs`。  
-> 例如：`this.SendCommand<LogEventCommand, string>("玩家死亡。");`
-
-### 使用建议
-
-- 命令类建议无状态，依赖通过重写 `Init()` 注入，避免在 `Execute()` 查找依赖。
-- 命令用于封装单一业务处理逻辑，便于解耦和单元测试。
-- 派发命令统一通过 `SendCommand`，不要手动 new 命令实例。
-- 命令系统用法高度借鉴 QFramework，具体可参考 [QFramework Command System](https://github.com/liangxiegame/QFramework)。
+- 全局 ServiceLocator 实现 **依赖注入**  
+- **事件总线**：类型安全的发布/订阅  
+- **命令分发**：CQRS 风格的 Request-Handler  
 
 ---
 
-## 示例
+## 主要特性
 
-### 5. Command（命令）系统用法
+- 零配置：运行时注册服务和命令  
+- 自动管理服务的初始化、启动和反初始化  
+- **事件系统**：类型安全的注册/注销/发送  
+- **命令系统**：
+  - 无参无返回  
+  - 无参有返回  
+  - 仅参数无返回  
+  - 参数与返回  
+- **依赖注入** 全面支持，通过 `this.TryGetService<T>(out T)` 获取服务  
+- 基于扩展方法的 API，任何实现定位接口的类均可发送命令或事件  
+- 源自 QFramework，但独立实现，专注性能与简洁  
 
-#### 有参数有返回值命令
+---
+
+## 架构概览
+
+1. **ServiceLocator** (`ServiceLocator<T>`)  
+2. **IService** / **AbstractService**  
+3. **ICanGetLocator<T>** / **ICanSetLocator**  
+4. **EventExtension**  
+5. **CommandExtension**  
+
+---
+
+## 安装
+
+通过 **OpenUPM**：
+
+```bash
+npm install com.rickit.rframework --registry https://package.openupm.com
+```
+
+或在 UPM 界面添加：`com.rickit.rframework`
+
+---
+
+## 快速上手
+
+1. 调用 `MyGameLocator.Initialize()` 在游戏入口初始化定位器。  
+2. 在自定义子类 `Init()` 中注册服务：  
+   ```csharp
+   public class MyGameLocator : ServiceLocator<MyGameLocator>
+   {
+       protected override void Init()
+       {
+           RegisterService<IAnalyticsService>(new AnalyticsService());
+           RegisterService<IDataService>(new DataService());
+       }
+   }
+   ```  
+3. 在任意类实现 `ICanGetLocator<MyGameLocator>`，通过扩展方法获取服务/命令：
+
+   ```csharp
+   public class PlayerController : MonoBehaviour,
+       ICanGetLocator<MyGameLocator>
+   {
+       private IAnalyticsService analytics;
+
+       void Awake()
+       {
+           this.TryGetService(out analytics);
+           analytics.TrackEvent("game_start");
+       }
+
+       void Start()
+       {
+           var data = this.GetService<IDataService>();
+           data.SaveGame();
+       }
+   }
+   ```
+
+---
+
+## ServiceLocator 生命周期 & 初始化
+
+- **Initialize**  
+  1. 创建定位器  
+  2. 调用子类 `Init()` 注册服务  
+  3. 服务 `Init()` → `Start()` → 标记已初始化  
+  4. 定位器标记已初始化  
+- **DeInit**  
+  - 服务 `DeInit()`  
+  - 清理定位器实例  
+
+---
+
+## 依赖注入 & 服务注册
 
 ```csharp
+public interface IAnalyticsService : IService
+{
+    void TrackEvent(string name);
+}
+public class AnalyticsService : AbstractService, IAnalyticsService
+{
+    public override void Init() { /* 初始化 SDK */ }
+    public void TrackEvent(string name) { /* 上报 */ }
+}
+// 在 MyGameLocator.Init():
+RegisterService<IAnalyticsService>(new AnalyticsService());
+```
+
+---
+
+## 命令与 MonoBehaviour 中的依赖注入
+
+在命令或 MonoBehaviour 的 `Init()` / `Awake()` 中使用 `this.TryGetService<T>(out T)` 自动注入：
+
+```csharp
+// 命令示例
 public class KillPlayerCommand : AbstractCommand<int, int>
 {
     private IPlayerService playerService;
-
     public override void Init()
     {
         this.TryGetService(out playerService);
     }
-
     public override int Execute(int playerId)
     {
         playerService.Kill(playerId);
         return playerId;
     }
 }
+
+// MonoBehaviour 示例
+public class GameStarter : MonoBehaviour,
+    ICanGetLocator<MyGameLocator>
+{
+    private IDataService dataService;
+    void Awake()
+    {
+        this.TryGetService(out dataService);
+        dataService.LoadGame();
+    }
+}
 ```
 
-#### 派发命令并获取返回值
+---
+
+## 事件系统
 
 ```csharp
+this.RegisterEvent<PlayerDamagedEvent>(evt => { /* 处理 */ });
+this.UnRegisterEvent<PlayerDamagedEvent>(handler);
+this.SendEvent(new PlayerDamagedEvent { Damage = 10 });
+```
+
+---
+
+## 命令系统
+
+```csharp
+this.SendCommand<ResetGameCommand>();
+int count = this.SendCommand<GetPlayerCountCommand, int>();
+this.SendCommand<LogEventCommand, string>("玩家死亡");
 int killedId = this.SendCommand<KillPlayerCommand, int, int>(playerId);
 ```
 
-#### 只有参数无返回值命令
+---
 
-```csharp
-public class LogEventCommand : AbstractCommandOnlyArgs<string>
-{
-    public override void Init() {}
+## 使用示例
 
-    public override void Execute(string message)
-    {
-        Debug.Log(message);
-    }
-}
-
-// 派发命令
-this.SendCommand<LogEventCommand, string>("玩家死亡。");
-```
-
-#### 无参数有返回值命令
-
-```csharp
-public class GetPlayerCountCommand : AbstractCommand<int>
-{
-    private IPlayerService playerService;
-
-    public override void Init()
-    {
-        this.TryGetService(out playerService);
-    }
-
-    public override int Execute()
-    {
-        return playerService.GetPlayerCount();
-    }
-}
-
-// 派发命令
-int count = this.SendCommand<GetPlayerCountCommand, int>();
-```
+1. **服务示例**  
+   ```csharp
+   var data = this.GetService<IDataService>();
+   data.SaveGame();
+   ```
+2. **Struct 注入命令**  
+   ```csharp
+   public struct PlayerInfo { public int Id; public string Name; }
+   this.SendCommand<LogPlayerInfoCommand, PlayerInfo>(
+       new PlayerInfo { Id = 1, Name = "Alice" });
+   ```
+3. **Tuple 注入命令**  
+   ```csharp
+   bool result = this.SendCommand<
+       ProcessScoresCommand,
+       (int Level, int Score),
+       bool>((2, 1200));
+   ```
 
 ---
 
 ## 最佳实践
 
-- **所有命令实例都不要手动 new，始终使用 SendCommand 派发，由框架负责依赖注入和缓存。**
-- **命令为无状态单例，由 ServiceLocator 统一管理。**
-- **命令系统用法高度借鉴 QFramework，具体可参考 [QFramework Command System](https://github.com/liangxiegame/QFramework)。**
+- 实现 `ICanGetLocator<MyGameLocator>` 并用 `this.GetService<T>()` / `this.TryGetService(out T)`。  
+- 在命令 `Init()` 或 MonoBehaviour `Awake()` 中注入。  
+- 服务统一在定位器 `Init()` 注册。  
+- 启动时调用 `MyGameLocator.Initialize()`，关闭时 `MyGameLocator.I.DeInit()`。
 
 ---
+
+## 高级主题
+
+- 场景/模块级定位器(`Scoped Locator`)。  
+- 与 Zenject/VContainer 等 DI 框架集成。
+
+---
+
+## 贡献指南
+
+1. Fork → 创建分支 → PR  
+2. 添加测试/示例
+
+---
+
+## 许可
+
+[MIT 协议](LICENSE)
