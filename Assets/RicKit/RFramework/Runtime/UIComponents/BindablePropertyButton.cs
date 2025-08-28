@@ -43,11 +43,11 @@ namespace RicKit.RFramework.UIComponents
         private void OnValueChange(T id)
         {
             var selected = id.Equals(this.id);
-            UpdateUI(selected, lastSelected);
+            UpdateUI(selected);
             lastSelected = selected;
         }
         protected abstract void InitUI(bool selected);
-        protected abstract void UpdateUI(bool selected, bool lastSelected);
+        protected abstract void UpdateUI(bool selected);
         protected virtual bool CanSelected() => true;
         protected virtual void ClickWhileLocked()
         {

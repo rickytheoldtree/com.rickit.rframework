@@ -1,4 +1,6 @@
 # Changelog
+## [1.4.4] - 2025-08-28
+- Refactor UpdateUI method in BindablePropertyButton
 ## [1.4.3] - 2025-06-13
 - Rename SendCommandOnlyArgs method to SendCommand for consistency
 ## [1.4.2] - 2025-06-12
