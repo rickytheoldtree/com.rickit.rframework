@@ -212,6 +212,16 @@ namespace RicKit.RFramework
         {
             this.value = value;
         }
+        
+        public void ForceNotify()
+        {
+            onValueChanged?.Invoke(value);
+        }
+        
+        public void UnRegisterAll()
+        {
+            onValueChanged = null;
+        }
     }
 
     public static class ServiceExtension
