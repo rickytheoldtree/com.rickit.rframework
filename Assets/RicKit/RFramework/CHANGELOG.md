@@ -1,6 +1,6 @@
 # Changelog
 ## [1.4.6] - 2025-11-26
-- Add BindablePropertyExtension for ICollection<T>, IList<T>, HashSet<T>
+- Add BindableProperty Extension for ICollection<T>, IList<T>, HashSet<T>
 ## [1.4.5] - 2025-09-29
 - Add ForceNotify and UnRegisterAll to BindableProperty
 ## [1.4.4] - 2025-08-28

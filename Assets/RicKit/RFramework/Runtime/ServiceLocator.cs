@@ -168,7 +168,6 @@ namespace RicKit.RFramework
         {
         }
     }
-    
 
     public static class ServiceExtension
     {
@@ -179,5 +178,4 @@ namespace RicKit.RFramework
             where T : IService, ICanGetLocator =>
             self.GetLocator().TryGetService(out service);
     }
-    
 }
