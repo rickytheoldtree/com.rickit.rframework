@@ -169,60 +169,6 @@ namespace RicKit.RFramework
         }
     }
     
-    public class BindableProperty<T>
-    {
-        private Action<T> onValueChanged;
-        private T value;
-
-        public T Value
-        {
-            get => value;
-            set
-            {
-                this.value = value;
-                onValueChanged?.Invoke(value);
-            }
-        }
-
-        public BindableProperty(T value = default)
-        {
-            this.value = value;
-        }
-
-        public BindableProperty<T> Register(Action<T> onValueChanged)
-        {
-            this.onValueChanged += onValueChanged;
-            return this;
-        }
-
-        public BindableProperty<T> RegisterAndInvoke(Action<T> onValueChanged)
-        {
-            this.onValueChanged += onValueChanged;
-            onValueChanged(value);
-            return this;
-        }
-
-        public BindableProperty<T> UnRegister(Action<T> onValueChanged)
-        {
-            this.onValueChanged -= onValueChanged;
-            return this;
-        }
-
-        public void SetWithoutInvoke(T value)
-        {
-            this.value = value;
-        }
-        
-        public void ForceNotify()
-        {
-            onValueChanged?.Invoke(value);
-        }
-        
-        public void UnRegisterAll()
-        {
-            onValueChanged = null;
-        }
-    }
 
     public static class ServiceExtension
     {
@@ -233,4 +179,5 @@ namespace RicKit.RFramework
             where T : IService, ICanGetLocator =>
             self.GetLocator().TryGetService(out service);
     }
+    
 }
