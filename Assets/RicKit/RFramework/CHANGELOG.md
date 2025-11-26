@@ -10,7 +10,7 @@
 ## [1.4.2] - 2025-06-12
 - refactor ICommand interfaces for improved execution handling
 ## [1.3.4] - 2025-06-03
-- refactor: improve service initialization l~~~~ogic in ServiceLocator and AsyncSupport
+- refactor: improve service initialization logic in ServiceLocator and AsyncSupport
 ## [1.3.1] - 2025-05-27
 - refactor event handling in ServiceLocator to use Dictionary<Type, Delegate>
 ## [1.3.0] - 2025-05-27
