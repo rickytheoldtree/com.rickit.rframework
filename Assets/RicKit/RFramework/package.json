@@ -4,7 +4,7 @@
   "author": {
     "name": "LYQ"
   },
-  "version": "1.4.6",
+  "version": "1.4.7",
   "unity": "2020.3",
   "description": "An IOC framework for Unity",
   "repository": {
