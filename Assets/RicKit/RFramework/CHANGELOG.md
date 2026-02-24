@@ -1,4 +1,6 @@
 # Changelog
+## [1.5.0] - 2025-11-28
+- simplify async init
 ## [1.4.7] - 2025-11-27
 - Introduces BindableCollection, BindableList, and BindableDictionary classes to support data binding for collections, lists, and dictionaries. Refactors and extends extension methods for collection operations to work with the new bindable types, enabling notification on collection changes.
 ## [1.4.6] - 2025-11-26

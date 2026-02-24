@@ -14,13 +14,13 @@ namespace RicKit.RFramework
         UniTask StartAsync(IProgress<float> progress);
     }
 
-    public abstract class AsyncServiceLocator<T> : ServiceLocator<T> where T : AsyncServiceLocator<T>, ICanInitAsync, new()
+    public abstract class AsyncServiceLocator<T> : ServiceLocator<T> where T : AsyncServiceLocator<T>, new()
     {
         public static async UniTask InitializeAsync(IProgress<float> progress)
         {
             if (locator != null) return;
             locator = new T();
-            await locator.InitAsync(progress);
+            locator.Init();
             foreach (var service in locator.cache)
             {
                 if (service is ICanInitAsync initAsync)
