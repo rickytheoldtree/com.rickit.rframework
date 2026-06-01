@@ -1,5 +1,5 @@
 # Changelog
-## [1.5.1] - 2026-06-01
+## [1.5.2] - 2026-06-01
 - Avoid double-init for services
 ## [1.5.0] - 2025-11-28
 - simplify async init

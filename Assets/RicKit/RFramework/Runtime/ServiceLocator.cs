@@ -86,6 +86,29 @@ namespace RicKit.RFramework
             locator.IsInitialized = true;
         }
 
+        public static void InitializeWithStopWatch()
+        {
+            if (locator != null) return;
+            locator = new T();
+            locator.Init();
+            var sw = new System.Diagnostics.Stopwatch();
+            foreach (var service in locator.cache)
+            {
+                sw.Restart();
+                service.Init();
+                UnityEngine.Debug.Log($"[StopWatch] Init {service.GetType().Name} cost {sw.ElapsedMilliseconds} ms");
+            }
+            foreach (var service in locator.cache)
+            {
+                sw.Restart();
+                service.Start();
+                service.IsInitialized = true;
+                UnityEngine.Debug.Log($"[StopWatch] Start {service.GetType().Name} cost {sw.ElapsedMilliseconds} ms");
+            }
+
+            locator.IsInitialized = true;
+        }
+
         public bool IsInitialized { get; set; }
 
         public virtual void Init()

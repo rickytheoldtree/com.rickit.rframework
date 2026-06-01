@@ -38,6 +38,34 @@ namespace RicKit.RFramework
             }
             locator.IsInitialized = true;
         }
+
+        public static async UniTask InitializeAsyncWithStopWatch(IProgress<float> progress)
+        {
+            if (locator != null) return;
+            locator = new T();
+            locator.Init();
+            var sw = new System.Diagnostics.Stopwatch();
+            foreach (var service in locator.cache)
+            {
+                sw.Restart();
+                if (service is ICanInitAsync initAsync)
+                    await initAsync.InitAsync(progress);
+                else
+                    service.Init();
+                UnityEngine.Debug.Log($"[StopWatch] Init {service.GetType().Name} cost {sw.ElapsedMilliseconds} ms");
+            }
+            foreach (var service in locator.cache)
+            {
+                sw.Restart();
+                if (service is ICanStartAsync startAsync)
+                    await startAsync.StartAsync(progress);
+                else
+                    service.Start();
+                service.IsInitialized = true;
+                UnityEngine.Debug.Log($"[StopWatch] Start {service.GetType().Name} cost {sw.ElapsedMilliseconds} ms");
+            }
+            locator.IsInitialized = true;
+        }
         
         public async UniTask RegisterServiceAsync<TService>(TService service, IProgress<float> progress) where TService : IService
         {
