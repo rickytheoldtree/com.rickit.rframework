@@ -46,6 +46,7 @@ namespace RicKit.RFramework
             if (!cache.TryAdd(type, service))
                 throw new ServiceAlreadyExistsException(type);
             if (!IsInitialized) return;
+            if (service.IsInitialized) return;
             if (service is ICanInitAsync initAsync)
                 await initAsync.InitAsync(progress);
             else

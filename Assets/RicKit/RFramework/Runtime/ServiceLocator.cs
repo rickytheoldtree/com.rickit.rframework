@@ -112,6 +112,7 @@ namespace RicKit.RFramework
             }
 
             if (!IsInitialized) return;
+            if (service.IsInitialized) return;
             service.Init();
             service.Start();
             service.IsInitialized = true;
